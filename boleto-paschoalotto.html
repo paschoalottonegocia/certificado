@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boleto | Paschoalotto</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:20px;background:linear-gradient(135deg,#f2f6ff,#ffffff);font-family:Arial,Helvetica,sans-serif;display:flex;justify-content:center;align-items:center}.caixa{width:100%;max-width:430px;padding:28px 22px;background:#fff;border:1px solid #d9e4f5;border-radius:22px;text-align:center;box-shadow:0 14px 40px rgba(20,86,190,.14)}.logo{width:110px;height:110px;margin:0 auto 16px;padding:8px;display:block;object-fit:contain;background:#fff;border:2px solid #d5e2f6;border-radius:50%;box-shadow:0 6px 18px rgba(20,86,190,.16)}.linha{width:60px;height:4px;margin:0 auto 20px;background:#1261d8;border-radius:20px}h1{margin:0 0 8px;color:#25364d;font-size:25px}.subtitulo{margin:0 0 18px;color:#65758b;font-size:15px;line-height:1.5}.dados-pagamento{margin-bottom:18px;padding:14px;background:#f3f7ff;border:1px solid #d5e2f6;border-radius:14px}.texto-valor{margin-bottom:4px;color:#6e7e93;font-size:13px}.valor{color:#1261d8;font-size:28px;font-weight:bold}.recebedor{margin-top:7px;color:#52647b;font-size:13px;line-height:1.45}#codigoBarras{width:100%;height:120px;margin:0 0 16px;padding:12px;border:1px solid #ccdaef;border-radius:12px;background:#f7faff;color:#3e4c5f;font-size:14px;line-height:1.5;resize:none;outline:none;word-break:break-all}#codigoBarras:focus{border-color:#1261d8}.botao{width:100%;padding:16px;border:none;border-radius:12px;background:#1261d8;color:#fff;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 8px 18px rgba(18,97,216,.28);transition:background .2s,transform .1s}.botao:hover{background:#0d52bd}.botao:active{transform:scale(.98)}#mensagem{min-height:24px;margin-top:16px;font-size:14px;font-weight:bold}.sucesso{color:#0b5ed7}.erro{color:#c62828}.orientacao{margin:16px 0 0;color:#6b7b90;font-size:13px;line-height:1.5}.seguranca{margin-top:18px;padding-top:15px;border-top:1px solid #edf1f6;color:#8290a2;font-size:12px}@media(max-width:480px){body{padding:12px;align-items:flex-start}.caixa{margin-top:10px;padding:24px 17px;border-radius:18px}.logo{width:96px;height:96px}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<main class="caixa">
+<img src="paschoalotto_logo.png" alt="Paschoalotto" class="logo">
+<div class="linha"></div>
+<h1>Pagamento via boleto</h1>
+<p class="subtitulo">Confira os dados do seu boleto e copie o código de barras abaixo para realizar o pagamento no aplicativo do seu banco.</p>
+<section class="dados-pagamento">
+<div class="texto-valor">Valor do boleto</div>
+<div id="valorPagamento" class="valor">Carregando...</div>
+<div id="dadosClienteExibicao" class="recebedor"></div>
+</section>
+<textarea id="codigoBarras" readonly aria-label="Código de barras do boleto" placeholder="Carregando código de barras..."></textarea>
+<button type="button" class="botao" onclick="copiarCodigoBarras()">Copiar código de barras</button>
+<div id="mensagem"></div>
+<p class="orientacao">Depois de copiar, abra o aplicativo do seu banco, escolha a opção de pagamento de boleto e cole ou informe o código de barras.</p>
+<div class="seguranca">🔒 Ambiente seguro para pagamento</div>
+</main>
+<script>
+const parametros=new URLSearchParams(window.location.search);
+const codigoBarrasRecebido=(parametros.get('codigo_barras')||'').trim();
+const valorRecebido=(parametros.get('valor_boleto')||'').trim();
+const nomeClienteRecebido=(parametros.get('nomecliente_boleto')||'').trim();
+const cpfClienteRecebido=(parametros.get('cpfcliente_boleto')||'').trim();
+const campoCodigo=document.getElementById('codigoBarras');
+const areaValor=document.getElementById('valorPagamento');
+const areaDadosCliente=document.getElementById('dadosClienteExibicao');
+const mensagem=document.getElementById('mensagem');
+iniciar();
+function iniciar(){
+  if(!codigoBarrasRecebido){mensagem.textContent='Código de barras indisponível.';mensagem.className='erro';campoCodigo.value='';}else{campoCodigo.value=codigoBarrasRecebido;}
+  areaValor.textContent=valorRecebido?formatarValorExibicao(valorRecebido):'—';
+  const dados=[]; if(nomeClienteRecebido) dados.push('Nome: '+nomeClienteRecebido); if(cpfClienteRecebido) dados.push('CPF: '+formatarCpf(cpfClienteRecebido)); areaDadosCliente.textContent=dados.join(' - ');
+}
+function formatarValorExibicao(valor){
+  let v=String(valor).replace(/\s/g,'').replace(/R\$/gi,'');
+  if(v.includes('.')&&v.includes(',')) v=v.replace(/\./g,'').replace(',','.'); else if(v.includes(',')) v=v.replace(',','.');
+  v=v.replace(/[^0-9.]/g,''); const n=Number(v); if(!Number.isFinite(n)) return valor;
+  return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
+function formatarCpf(cpf){const n=String(cpf||'').replace(/\D/g,'');return n.length===11?n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):cpf;}
+async function copiarCodigoBarras(){
+  if(!campoCodigo.value){mensagem.textContent='Código de barras indisponível.';mensagem.className='erro';return;}
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(campoCodigo.value);}else{copiarMetodoAlternativo();}mostrarSucesso();}
+  catch(e){try{copiarMetodoAlternativo();mostrarSucesso();}catch(_){campoCodigo.focus();campoCodigo.select();mensagem.textContent='Selecione o código acima e copie manualmente.';mensagem.className='erro';}}
+}
+function copiarMetodoAlternativo(){campoCodigo.focus();campoCodigo.select();campoCodigo.setSelectionRange(0,campoCodigo.value.length);if(!document.execCommand('copy')) throw new Error('Falha ao copiar');const s=window.getSelection();if(s)s.removeAllRanges();}
+function mostrarSucesso(){mensagem.textContent='✅ Código de barras copiado com sucesso!';mensagem.className='sucesso';}
+</script>
+</body>
+</html>
